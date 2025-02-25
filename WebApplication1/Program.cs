@@ -18,7 +18,6 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<ApplicationDbContext>(builder=> builder.UseSqlServer("server=.;database=Products;user id=sa;password=sa123456; trust server certificate=true"));
 var app = builder.Build(); 
 
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
