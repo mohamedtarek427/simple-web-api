@@ -97,7 +97,7 @@ namespace WebApplication1.Controllers
                     Directory.CreateDirectory(uploadFolderPath);
                 }
 
-                var filePath = Path.Combine(uploadFolderPath, uniqueFileName);
+                var filePath = Path.Combine(_webHostEnvironment.WebRootPath, "uploads");
 
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
@@ -190,7 +190,6 @@ namespace WebApplication1.Controllers
                 return StatusCode(500, $"Error retrieving products: {ex.Message}");
             }
         }
-
         /// <summary>
         /// Get a single product by ID.
         /// </summary>
@@ -212,5 +211,29 @@ namespace WebApplication1.Controllers
                 return StatusCode(500, $"Error retrieving product: {ex.Message}");
             }
         }
+        //get by category 
+        [HttpGet]
+        [Route("category/{categoryId}")]
+        public async Task<ActionResult<IEnumerable<Product>>> GetByCategory(int categoryId)
+        {
+            try
+            {
+                var products = await _dbContext.Products
+                                               .Where(p => p.categoryId == categoryId)
+                                               .ToListAsync();
+
+                if (products == null || products.Count == 0)
+                {
+                    return NotFound($"No products found for category ID {categoryId}.");
+                }
+
+                return Ok(products);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error retrieving products: {ex.Message}");
+            }
+        }
+
     }
 }
