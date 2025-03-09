@@ -15,7 +15,7 @@ namespace WebApplication1.Data
         public string stu { get; set; } = string.Empty; // Ensure a default value
 
         public string? ImageUrl { get; set; } // Nullable to handle possible NULL values
-        public int categoryId { get; set; }
+        public int? categoryId { get; set; }
     }
 
     public class CreateProductDto
@@ -23,7 +23,7 @@ namespace WebApplication1.Data
         public string Name { get; set; } = string.Empty;
         public string stu { get; set; } = string.Empty; // Add this if missing
         public IFormFile Image { get; set; } // Ensure this is present for file uploads
-        public int categoryId { get; set; }
+        public int? categoryId { get; set; }
     }
     public class Category
     {
