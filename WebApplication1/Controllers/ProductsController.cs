@@ -1,11 +1,11 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WebApplication1.Data;
 using System.IO;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System;
+using WebApplication1.Entities;
 
 namespace WebApplication1.Controllers
 {
@@ -26,7 +26,6 @@ namespace WebApplication1.Controllers
         /// Create a new product with an uploaded image.
         /// </summary>
         [HttpPost]
-        [Route("")]
         public async Task<ActionResult<int>> CreateProduct([FromForm] CreateProductDto createProductDto)
         {
             try
@@ -36,34 +35,30 @@ namespace WebApplication1.Controllers
                     return BadRequest("Image is required.");
                 }
 
-                // Define the Uploads folder inside the project root
                 var uploadFolderPath = Path.Combine(_webHostEnvironment.ContentRootPath, "Uploads");
-
-                // Ensure the folder exists
                 if (!Directory.Exists(uploadFolderPath))
                 {
                     Directory.CreateDirectory(uploadFolderPath);
                 }
 
-                // Generate a unique filename to prevent conflicts
                 var uniqueFileName = $"{Guid.NewGuid()}_{createProductDto.Image.FileName}";
                 var filePath = Path.Combine(uploadFolderPath, uniqueFileName);
 
-                // Save the image file
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     await createProductDto.Image.CopyToAsync(stream);
                 }
 
-                // Store the relative image URL
                 var product = new Product
                 {
                     Name = createProductDto.Name,
-                    stu = createProductDto.stu, // Ensure proper casing
-                    ImageUrl = $"/Uploads/{uniqueFileName}"
+                    stu = createProductDto.stu,
+                    ImageUrl = $"/Uploads/{uniqueFileName}",
+                    categoryId = createProductDto.categoryId,
+                    description = createProductDto.description
                 };
 
-                _dbContext.Products.Add(product);
+                _dbContext.Product.Add(product);
                 await _dbContext.SaveChangesAsync();
 
                 return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
@@ -75,150 +70,61 @@ namespace WebApplication1.Controllers
         }
 
         /// <summary>
-        /// Upload an image separately and return the file URL.
+        /// Add a new category.
         /// </summary>
-        [HttpPost]
-        [Route("upload-image")]
-        public async Task<ActionResult<string>> UploadImage(IFormFile file)
+        [HttpPost("category")]
+        public async Task<ActionResult<int>> CreateCategory([FromBody] Category categoryDto)
         {
             try
             {
-                if (file == null || file.Length == 0)
+                if (string.IsNullOrEmpty(categoryDto.Name))
                 {
-                    return BadRequest("No file uploaded.");
+                    return BadRequest("Category name is required.");
                 }
 
-                // Ensure unique filenames
-                var uniqueFileName = $"{Guid.NewGuid()}_{file.FileName}";
-                var uploadFolderPath = Path.Combine(_webHostEnvironment.WebRootPath, "images");
+                var category = new Category { Name = categoryDto.Name };
 
-                if (!Directory.Exists(uploadFolderPath))
-                {
-                    Directory.CreateDirectory(uploadFolderPath);
-                }
-
-                var filePath = Path.Combine(_webHostEnvironment.WebRootPath, "uploads");
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await file.CopyToAsync(stream);
-                }
-
-                var fileUrl = $"/images/{uniqueFileName}";
-                return Ok(new { url = fileUrl });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Error uploading image: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Update an existing product.
-        /// </summary>
-        [HttpPut]
-        [Route("{id}")]
-        public async Task<ActionResult> UpdateProduct(int id, [FromBody] Product updateProductDto)
-        {
-            try
-            {
-                var existingProduct = await _dbContext.Products.FindAsync(id);
-                if (existingProduct == null)
-                {
-                    return NotFound($"Product with ID {id} not found.");
-                }
-
-                existingProduct.Name = updateProductDto.Name ?? existingProduct.Name;
-                existingProduct.stu = updateProductDto.stu ?? existingProduct.stu;
-                existingProduct.ImageUrl = updateProductDto.ImageUrl ?? existingProduct.ImageUrl;
-
-                _dbContext.Products.Update(existingProduct);
+                _dbContext.Category.Add(category);
                 await _dbContext.SaveChangesAsync();
 
-                return Ok(existingProduct);
+                return CreatedAtAction(nameof(GetCategoryById), new { id = category.categoryId }, category);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Error updating product: {ex.Message}");
+                return StatusCode(500, $"Error creating category: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// Delete a product by ID.
+        /// Get a category by ID.
         /// </summary>
-        [HttpDelete]
-        [Route("{id}")]
-        public async Task<ActionResult> DeleteProduct(int id)
+        [HttpGet("category/{id}")]
+        public async Task<ActionResult<Category>> GetCategoryById(int id)
         {
             try
             {
-                var existingProduct = await _dbContext.Products.FindAsync(id);
-                if (existingProduct == null)
+                var category = await _dbContext.Category.FindAsync(id);
+                if (category == null)
                 {
-                    return NotFound($"Product with ID {id} not found.");
+                    return NotFound($"Category with ID {id} not found.");
                 }
-
-                _dbContext.Products.Remove(existingProduct);
-                await _dbContext.SaveChangesAsync();
-
-                return Ok($"Product with ID {id} deleted.");
+                return Ok(category);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Error deleting product: {ex.Message}");
+                return StatusCode(500, $"Error retrieving category: {ex.Message}");
             }
         }
 
         /// <summary>
-        /// Get all products.
+        /// Get products by category ID.
         /// </summary>
-        [HttpGet]
-        [Route("")]
-        public async Task<ActionResult<IEnumerable<Product>>> GetAll()
-        {
-            try
-            {
-                var products = await _dbContext.Products.ToListAsync();
-                if (products == null || products.Count == 0)
-                {
-                    return NotFound("No products found.");
-                }
-                return Ok(products);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Error retrieving products: {ex.Message}");
-            }
-        }
-        /// <summary>
-        /// Get a single product by ID.
-        /// </summary>
-        [HttpGet]
-        [Route("{id}")]
-        public async Task<ActionResult<Product>> GetById(int id)
-        {
-            try
-            {
-                var product = await _dbContext.Products.FindAsync(id);
-                if (product == null)
-                {
-                    return NotFound($"Product with ID {id} not found.");
-                }
-                return Ok(product);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Error retrieving product: {ex.Message}");
-            }
-        }
-        //get by category 
-        [HttpGet]
-        [Route("category/{categoryId}")]
+        [HttpGet("category/{categoryId}/products")]
         public async Task<ActionResult<IEnumerable<Product>>> GetByCategory(int categoryId)
         {
             try
             {
-                var products = await _dbContext.Products
+                var products = await _dbContext.Product
                                                .Where(p => p.categoryId == categoryId)
                                                .ToListAsync();
 
@@ -235,5 +141,102 @@ namespace WebApplication1.Controllers
             }
         }
 
+        /// <summary>
+        /// Get all products.
+        /// </summary>
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Product>>> GetAll()
+        {
+            try
+            {
+                var products = await _dbContext.Product.ToListAsync();
+                if (products == null || products.Count == 0)
+                {
+                    return NotFound("No products found.");
+                }
+                return Ok(products);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error retrieving products: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Get a single product by ID.
+        /// </summary>
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Product>> GetById(int id)
+        {
+            try
+            {
+                var product = await _dbContext.Product.FindAsync(id);
+                if (product == null)
+                {
+                    return NotFound($"Product with ID {id} not found.");
+                }
+                return Ok(product);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error retrieving product: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Update an existing product.
+        /// </summary>
+        [HttpPut("{id}")]
+        public async Task<ActionResult> UpdateProduct(int id, [FromBody] Product updateProductDto)
+        {
+            try
+            {
+                var existingProduct = await _dbContext.Product.FindAsync(id);
+                if (existingProduct == null)
+                {
+                    return NotFound($"Product with ID {id} not found.");
+                }
+
+                existingProduct.Name = updateProductDto.Name ?? existingProduct.Name;
+                existingProduct.stu = updateProductDto.stu ?? existingProduct.stu;
+                existingProduct.ImageUrl = updateProductDto.ImageUrl ?? existingProduct.ImageUrl;
+                existingProduct.categoryId = updateProductDto.categoryId ?? existingProduct.categoryId;
+                existingProduct.description = updateProductDto.description ?? existingProduct.description;
+
+                _dbContext.Product.Update(existingProduct);
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(existingProduct);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error updating product: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Delete a product by ID.
+        /// </summary>
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> DeleteProduct(int id)
+        {
+            try
+            {
+                var existingProduct = await _dbContext.Product.FindAsync(id);
+                if (existingProduct == null)
+                {
+                    return NotFound($"Product with ID {id} not found.");
+                }
+
+                _dbContext.Product.Remove(existingProduct);
+                await _dbContext.SaveChangesAsync();
+
+                return Ok($"Product with ID {id} deleted.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error deleting product: {ex.Message}");
+            }
+        }
     }
 }

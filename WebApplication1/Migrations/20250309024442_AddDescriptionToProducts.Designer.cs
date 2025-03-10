@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WebApplication1.Data;
 
@@ -10,9 +11,11 @@ using WebApplication1.Data;
 namespace WebApplication1.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250309024442_AddDescriptionToProducts")]
+    partial class AddDescriptionToProducts
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,7 +24,7 @@ namespace WebApplication1.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("WebApplication1.Entities.Category", b =>
+            modelBuilder.Entity("WebApplication1.Data.Category", b =>
                 {
                     b.Property<int>("categoryId")
                         .ValueGeneratedOnAdd()
@@ -38,7 +41,7 @@ namespace WebApplication1.Migrations
                     b.ToTable("categories2", (string)null);
                 });
 
-            modelBuilder.Entity("WebApplication1.Entities.Product", b =>
+            modelBuilder.Entity("WebApplication1.Data.Product", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -66,19 +69,7 @@ namespace WebApplication1.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("categoryId");
-
                     b.ToTable("Products", (string)null);
-                });
-
-            modelBuilder.Entity("WebApplication1.Entities.Product", b =>
-                {
-                    b.HasOne("WebApplication1.Entities.Category", "Category")
-                        .WithMany()
-                        .HasForeignKey("categoryId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.Navigation("Category");
                 });
 #pragma warning restore 612, 618
         }

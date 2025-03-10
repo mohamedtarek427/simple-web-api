@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using WebApplication1.Entities;
 
 namespace WebApplication1.Data
 {
@@ -9,7 +10,7 @@ namespace WebApplication1.Data
         }
 
         // ✅ Corrected: DbSet<Product> instead of object
-        public DbSet<Product> Products { get; set; }
+        public DbSet<Product> Product { get; set; }
         public DbSet<Category> Category { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -17,6 +18,11 @@ namespace WebApplication1.Data
             base.OnModelCreating(modelBuilder);
             modelBuilder.Entity<Product>().ToTable("Products");
             modelBuilder.Entity<Category>().ToTable("categories2");
+            modelBuilder.Entity<Product>()
+               .HasOne(p => p.Category)
+               .WithMany()  // If each category can have multiple products
+               .HasForeignKey(p => p.categoryId)
+               .OnDelete(DeleteBehavior.Cascade);
 
         }
     }
